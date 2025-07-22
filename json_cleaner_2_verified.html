@@ -1,0 +1,65 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JSON isHidden 清理工具 - 可验证版本</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>🧹 JSON 清理工具（可验证版本）</h2>
+  <p>此工具会递回扫描整份 JSON 档案，删除所有含有 <code>isHidden: true</code> 的物件。</p>
+  <input type="file" id="fileInput" accept=".json">
+  <button onclick="processFile()">▶️ 上传并清理</button>
+  <p id="status" style="color: green; font-weight: bold;"></p>
+  <pre><code id="codeBlock" style="background:#f0f0f0; padding:10px; display:block;"></code></pre>
+
+  <script>
+    function deepClean(obj) {
+      if (Array.isArray(obj)) {
+        return obj
+          .filter(item => !(item && typeof item === 'object' && item.isHidden === true))
+          .map(deepClean);
+      } else if (typeof obj === 'object' && obj !== null) {
+        const newObj = {};
+        for (const key in obj) {
+          newObj[key] = deepClean(obj[key]);
+        }
+        return newObj;
+      }
+      return obj;
+    }
+
+    function processFile() {
+      const input = document.getElementById('fileInput');
+      const status = document.getElementById('status');
+      const codeBlock = document.getElementById('codeBlock');
+
+      if (!input.files[0]) {
+        alert('請選擇 JSON 檔案');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          const cleaned = deepClean(data);
+          const output = JSON.stringify(cleaned, null, 2);
+          codeBlock.textContent = output;
+
+          const blob = new Blob([output], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "cleaned_verified.json";
+          a.click();
+          status.textContent = "✅ 清除成功，档案已下载，内容显示如下：";
+        } catch (err) {
+          alert("⚠️ JSON 格式错误，请确认档案内容正确");
+        }
+      };
+      reader.readAsText(input.files[0]);
+    }
+  </script>
+</body>
+</html>
